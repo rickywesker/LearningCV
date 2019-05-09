@@ -208,9 +208,8 @@ criterion = nn.CrossEntropyLoss()
 train(net, train_data, test_data, 10, optimizer, criterion)
 
 ```
-
-
-   from __future__ import print_function, division
+```python
+from __future__ import print_function, division
 
 import torch
 import torch.nn as nn
@@ -225,9 +224,6 @@ import os
 import copy
 
 plt.ion()   # interactive mode
-
-
-# In[3]:
 
 
 #Augmentation and normalization
@@ -259,10 +255,6 @@ class_names = image_datasets['train'].classes
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
 
-
-# In[7]:
-
-
 def imshow(inp, title = None):
     """Imshow for tensor"""
     inp = inp.numpy().transpose((1,2,0))
@@ -282,9 +274,6 @@ inputs, classes = next(iter(dataloaders['train']))
 out = torchvision.utils.make_grid(inputs)
 
 imshow(out, title=[class_names[x] for x in classes])
-
-
-# In[19]:
 
 
 def train_model(model, criterion, optimizer, scheduler, num_epoch=25):
@@ -352,10 +341,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epoch=25):
     model.load_state_dict(best_model_wts)
     return model
 
-
-# In[26]:
-
-
 #Visualizing the model
 
 def visualize_model(model, num_images=6):
@@ -384,10 +369,6 @@ def visualize_model(model, num_images=6):
                     return
         model.train(mode=was_training)
 
-
-# In[21]:
-
-
 #Finetuning the convet
 model_ft = models.resnet18(pretrained=True)
 num_ftrs = model_ft.fc.in_features
@@ -404,22 +385,10 @@ optimizer_ft = optim.SGD(model_ft.parameters(), lr = 0.001, momentum=0.9)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7,gamma=0.1)
 
 
-# In[22]:
-
-
 model_ft = train_model(model_ft, criterion, optimizer_ft,exp_lr_scheduler,num_epoch=25)
-
-
-# In[27]:
-
 
 visualize_model(model_ft)
 
-
-# In[ ]:
-
-
-
-```python
-
 ```
+
+

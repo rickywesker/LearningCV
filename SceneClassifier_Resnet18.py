@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[144]:
+# In[1]:
 
 
 import pandas as pd
@@ -21,10 +21,10 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 from torchvision import datasets, models
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0")
 
 
-# In[93]:
+# In[2]:
 
 
 class MyTrainDataset(Dataset):
@@ -58,7 +58,8 @@ class MyTrainDataset(Dataset):
         imgtmp = self.Resize(img_data)
         imgflip = self.Flip(imgtmp)
         #turn the image into tensor
-        img_as_tensor = self.to_tensor(imgflip)
+        img_as_tensor = self.to_tensor(imgflip).to(device)
+        #GPU
         
         #get the label
         single_image_label = self.label_arr[index]
@@ -68,14 +69,13 @@ class MyTrainDataset(Dataset):
         return self.data_length
 
 
-# In[188]:
-
+# In[3]:
 
 
 path = "cvdl2019/train_images/train_annotations.csv"
 sceneset = MyTrainDataset(path)
-labels_len = len(pd.read_csv('cvdl2019/scene_classes.csv'))
-batch_size = 100
+labels_len = len(pd.read_csv('cvdl2019/scene_classes.csv'))+1
+batch_size = 163
 validation_split = .2
 shuffle_dataset = True
 random_seed = 42
@@ -100,7 +100,14 @@ dataloaders = {'train':train_loader,'val':valid_loader}
 datasetSize = {'train':43104,'val':10775}
 
 
-# In[ ]:
+# In[4]:
+
+
+loss = []
+acc = []
+
+
+# In[5]:
 
 
 def train_model(model, criterion,optimizer,scheduler, num_epoch = 25):
@@ -118,31 +125,33 @@ def train_model(model, criterion,optimizer,scheduler, num_epoch = 25):
             if phase == 'train':
                 scheduler.step()
                 model.train()
-                print("debugging: train phase")
+                #print("debugging: train phase")
             else:
                 model.eval()
-                print("debugging: eval phase")
+                #print("debugging: eval phase")
             running_loss = 0.0
             running_corrects = 0
             
             #Iterate
             for inputs, labels in dataloaders[phase]:
-                #inputs = inputs.to(device)
-                #labels = labels.to(device)
-                print("debugging: iter phase")
+                inputs = inputs.cuda()
+                labels = labels.cuda()
+                #print("debugging: iter phase")
                 #zero the parameter gradient
-                print("debugging: zero grad")
+                #print("debugging: zero grad")
                 optimizer.zero_grad()
                 
                 #forward
                 with torch.set_grad_enabled(phase == 'train'):
-                    print("debugging: forward phase")
+                    #print("debugging: forward phase")
+                    inputs = inputs.cuda()
                     outputs = model(inputs)
                     _, preds = torch.max(outputs,1)
                     loss = criterion(outputs,labels)
                     
                     #back
                     if phase == 'train':
+                        #print("debugging: backward phase")
                         loss.backward()
                         optimizer.step()
                 #stat
@@ -151,7 +160,8 @@ def train_model(model, criterion,optimizer,scheduler, num_epoch = 25):
             
             epoch_loss = running_loss / datasetSize[phase]
             epoch_acc = running_corrects.double() / datasetSize[phase]
-            
+            loss.append(epoch_loss)
+            acc.append(epoch_acc)
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
             
             #deep copy the model
@@ -169,84 +179,60 @@ def train_model(model, criterion,optimizer,scheduler, num_epoch = 25):
     return model
 
 
-# In[159]:
-
-
-def visualize_model(model, num_images=6):
-    was_training = model.training
-    model.eval()
-    images_so_far = 0
-    fig = plt.figure()
-
-    with torch.no_grad():
-        for i, (inputs, labels) in enumerate(dataloaders['val']):
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
-
-            for j in range(inputs.size()[0]):
-                images_so_far += 1
-                ax = plt.subplot(num_images//2, 2, images_so_far)
-                ax.axis('off')
-                ax.set_title('predicted: {}'.format(class_names[preds[j]]))
-                imshow(inputs.cpu().data[j])
-
-                if images_so_far == num_images:
-                    model.train(mode=was_training)
-                    return
-        model.train(mode=was_training)
-
-
-# In[206]:
+# In[6]:
 
 
 model_ft = models.resnet18(pretrained=True)
-num_ftrs = model_ft.fc.in_features
-model_ft.fc = nn.Linear(num_ftrs, 2)
 
-model_ft = model_ft.to(device)
+
+# In[ ]:
+
+
+#model_ft = models.resnet18(pretrained=True).to(device)
+num_ftrs = model_ft.fc.in_features
+model_ft.fc = nn.Linear(num_ftrs, 80)
+
+#model_ft = model_ft.cuda()
 
 criterion = nn.CrossEntropyLoss()
-
+model_ft = model_ft.to(device)
 # Observe that all parameters are being optimized
 optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
-optzer = optim.Adam(model.parameters())
+
+optzer = optim.Adam(model_ft.parameters())
 # Decay LR by a factor of 0.1 every 7 epochs
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optzer, step_size=7, gamma=0.1)
 
 
-# In[207]:
+# In[ ]:
 
 
-model_ft = train_model(model, criterion, optzer, exp_lr_scheduler,
-                       num_epoch = 25)
+model_ft.load_state_dict(torch.load('params.pkl'))
 
 
-# In[182]:
+# In[ ]:
 
 
-iter_1 = iter(dataloaders['train'])
-features, labels = next(iter_1)
-features.shape, labels.shape
+model_ft = train_model(model_ft, criterion, optzer,exp_lr_scheduler,
+                       num_epoch = 20)
 
 
-# In[196]:
+# In[ ]:
 
 
-model = models.vgg16(pretrained=True)
-for param in model.parameters():
-    param.requires_grad = False
+torch.save(model_ft.state_dict(),'model.pkl')
 
 
-# In[197]:
+# In[ ]:
 
 
-n_classes = 80
-n_inputs = model.classifier[6].in_features
-model.classifier[6] = nn.Sequential(
-                      nn.Linear(n_inputs,256),nn.ReLU(),nn.Dropout(0.4),nn.Linear(256,n_classes),nn.LogSoftmax(dim = 1))
+torch.save(model_ft.state_dict(),'params.pkl')
+
+
+# In[ ]:
+
+
+labels_len
 
 
 # In[ ]:

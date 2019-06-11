@@ -1,5 +1,8 @@
+# Face Detection
+![gif](myface.gif)
+![gif](creepyFace.gif)
 
-
+# Data Augmentation
 ```python
 import sys
 sys.path.append('..')

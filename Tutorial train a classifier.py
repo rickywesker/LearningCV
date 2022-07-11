@@ -103,21 +103,21 @@ optimizer = opt.SGD(net.parameters(), lr=0.001,momentum = 0.9)
 #train the network
 
 for epoch in range(2):
-    
+
     running_loss = 0
     for i, data in enumerate(trainloader, 0):
         #get the input
         inputs, labels = data
-        
+
         #zero the parameter gradients
         optimizer.zero_grad()
-        
+
         #forward + backward + optimize
         output = net(inputs)
         loss = criterion(output, labels)
         loss.backward()
         optimizer.step()
-        
+
         #print stat
         running_loss += loss.item()
         if i % 2000 == 1999:#every 2000 mini-batches

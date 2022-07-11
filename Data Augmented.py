@@ -21,9 +21,9 @@ im
 
 
 #Resize
-print('Before scale, shape: {}'.format(im.size))
+print(f'Before scale, shape: {im.size}')
 new_im = tfs.Resize((100,200))(im)
-print('After scale, shape: {}'.format(new_im.size))
+print(f'After scale, shape: {new_im.size}')
 new_im
 
 
@@ -120,7 +120,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torchvision.datasets import CIFAR10
-import torchvision 
+import torchvision
 from torchvision import transforms as tfs
 from utils import train, resnet
 

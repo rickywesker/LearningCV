@@ -204,14 +204,14 @@ acc = []
 
 def train_model(model, criterion,optimizer,scheduler, num_epoch = 25):
     since = time.time()
-    
+
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
-    
+
     for epoch in range(num_epoch):
-        print('Epoch {}/{}'.format(epoch, num_epoch - 1))
+        print(f'Epoch {epoch}/{num_epoch - 1}')
         print('*'*10)
-        
+
         #each stage have training and validation phase
         for phase in ['train', 'val']:
             if phase == 'train':
@@ -223,7 +223,7 @@ def train_model(model, criterion,optimizer,scheduler, num_epoch = 25):
                 #print("debugging: eval phase")
             running_loss = 0.0
             running_corrects = 0
-            
+
             #Iterate
             for inputs, labels in dataloaders[phase]:
                 inputs = inputs.cuda()
@@ -232,7 +232,7 @@ def train_model(model, criterion,optimizer,scheduler, num_epoch = 25):
                 #zero the parameter gradient
                 #print("debugging: zero grad")
                 optimizer.zero_grad()
-                
+
                 #forward
                 with torch.set_grad_enabled(phase == 'train'):
                     #print("debugging: forward phase")
@@ -240,7 +240,7 @@ def train_model(model, criterion,optimizer,scheduler, num_epoch = 25):
                     outputs = model(inputs)
                     _, preds = torch.max(outputs,1)
                     loss = criterion(outputs,labels)
-                    
+
                     #back
                     if phase == 'train':
                         #print("debugging: backward phase")
@@ -249,13 +249,13 @@ def train_model(model, criterion,optimizer,scheduler, num_epoch = 25):
                 #stat
                 running_loss += loss.item() *inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
-            
+
             epoch_loss = running_loss / datasetSize[phase]
             epoch_acc = running_corrects.double() / datasetSize[phase]
             #loss.append(epoch_loss)
             #acc.append(epoch_acc)
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
-            
+
             #deep copy the model
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
@@ -326,7 +326,7 @@ def visualize_model(model, num_images=4):
     fig = plt.figure()
 
     with torch.no_grad():
-        for i, (inputs, labels) in enumerate(dataloaders['val']):
+        for inputs, labels in dataloaders['val']:
             inputs = inputs.to(device)
             labels = labels.to(device)
 
@@ -337,7 +337,7 @@ def visualize_model(model, num_images=4):
                 images_so_far += 1
                 ax = plt.subplot(num_images//2, 2, images_so_far)
                 ax.axis('off')
-                ax.set_title('predicted: {}'.format(labels_ls[preds[j]]))
+                ax.set_title(f'predicted: {labels_ls[preds[j]]}')
                 imshow(inputs.cpu().data[j])
                 pred_ls.append(int(preds[j].cpu().numpy()))
 
@@ -350,7 +350,7 @@ def visualize_model(model, num_images=4):
 # In[30]:
 
 
-for i, (inputs, name) in enumerate(dataloaders['val']):
+for inputs, name in dataloaders['val']:
     count += 1
     print(inputs.shape)
     print(name)
@@ -365,14 +365,13 @@ print(count)
 count = 0
 model_ft.eval()
 test_pred = torch.LongTensor()
-for i, data in enumerate(testloader):
-    
+for data in testloader:
     data = Variable(data[0], volatile=True)
     if torch.cuda.is_available():
         data = data.cuda()
-            
+
     output = model_ft(data)
-        
+
     pred = output.cpu().data.max(1, keepdim=True)[1]
     test_pred = torch.cat((test_pred, pred), dim=0)
 '''
@@ -411,7 +410,7 @@ count = 0
 Fucking Hell. What the fuck is this.
 
 '''
-for i, (inputs, name) in enumerate(testloader):
+for inputs, name in testloader:
     count += 1
     print(inputs.shape)
     print(name)

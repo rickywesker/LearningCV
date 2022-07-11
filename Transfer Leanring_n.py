@@ -83,14 +83,13 @@ imshow(out, title=[class_names[x] for x in classes])
 
 def train_model(model, criterion, optimizer, scheduler, num_epoch=25):
     since = time.time()
-    
+
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
-    
+
     for epoch in range(num_epoch):
-        print('Epoch{}/{}'.format(epoch,num_epoch-1))
+        print(f'Epoch{epoch}/{num_epoch - 1}')
         print('-'*10)
-        
     #Each epoch in range(num_epochs):
         for phase in ['train','val']:
             if phase == 'train':
@@ -121,7 +120,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epoch=25):
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
-
                 #stat
                     running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
@@ -159,7 +157,7 @@ def visualize_model(model, num_images=6):
     fig = plt.figure()
 
     with torch.no_grad():
-        for i, (inputs, labels) in enumerate(dataloaders['val']):
+        for inputs, labels in dataloaders['val']:
             inputs = inputs.to(device)
             labels = labels.to(device)
 
@@ -170,7 +168,7 @@ def visualize_model(model, num_images=6):
                 images_so_far += 1
                 ax = plt.subplot(num_images//2, 2, images_so_far)
                 ax.axis('off')
-                ax.set_title('predicted: {}'.format(class_names[preds[j]]))
+                ax.set_title(f'predicted: {class_names[preds[j]]}')
                 imshow(inputs.cpu().data[j])
 
                 if images_so_far == num_images:
